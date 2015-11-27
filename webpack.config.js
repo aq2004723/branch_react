@@ -9,16 +9,19 @@ module.exports = {
     target: 'web',
     cache: true,
     entry: {
-        app:path.join(srcPath, 'js/app.jsx')
+        login:path.join(srcPath,'js/login.jsx'),
+        admin:path.join(srcPath,'js/admin.jsx'),
+        //instructor:path.join(srcPath,'js/instructor.jsx'),
+        student:path.join(srcPath,'js/student.jsx')
     },
     resolve: {
-        root: srcPath,
+        root: [srcPath,__dirname],
         extensions: ['', '.js','.jsx'],
-        modulesDirectories: ['node_modules', 'src']
+        modulesDirectories: ['node_modules']
     },
     output: {
         path: path.join(__dirname, 'dist'),
-        filename: '[name].js',
+        filename: 'js/[name].js',
         library: ['Example', '[name]'],
         pathInfo: true
     },
@@ -31,8 +34,22 @@ module.exports = {
     },
     plugins: [
         new webpack.optimize.CommonsChunkPlugin('common', 'common.js'),
+
         new HtmlWebpackPlugin({
-            template: 'src/index.html'
+            filename:'../template/admin.html',
+            template: 'src/admin.html'
+        }),
+        new HtmlWebpackPlugin({
+            filename:'../template/login.html',
+            template: 'src/login.html'
+        }),
+        new HtmlWebpackPlugin({
+            filename:'../template/student.html',
+            template: 'src/student.html'
+        }),
+        new HtmlWebpackPlugin({
+            filename:'../template/instructor.html',
+            template: 'src/instructor.html'
         }),
         new webpack.NoErrorsPlugin()
     ]
