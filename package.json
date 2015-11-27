@@ -1,0 +1,29 @@
+{
+  "name": "web_app",
+  "version": "1.0.0",
+  "description": "模板",
+  "main": "src/js/app.js",
+  "scripts": {
+    "build": "webpack --progress --profile --colors",
+    "watch": "webpack-dev-server --hot --inline --progress --colors",
+    "test": "echo \"No unit tests and e2e tests yet\" && exit 1"
+  },
+  "author": "bu",
+  "repository": "https://github.com/aq2004723/web_app",
+  "license": "ISC",
+  "devDependencies": {
+    "babel-core": "^6.2.1",
+    "babel-loader": "^6.2.0",
+    "babel-preset-es2015": "^6.1.18",
+    "babel-preset-react": "^6.1.18",
+    "flux": "^2.1.1",
+    "html-webpack-plugin": "^1.7.0",
+    "webpack": "^1.12.8"
+  },
+  "dependencies": {
+    "jquery": "^2.1.4",
+    "materialize-css": "^0.97.3",
+    "react": "^0.14.3",
+    "react-dom": "^0.14.3"
+  }
+}
