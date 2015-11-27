@@ -41,8 +41,30 @@ var StudentPage = React.createClass({
             }
         });
     },
+    handleUserSubmitBranch:function(data){
+        var ins = this;
+        var userState = this.state.student;
+        $.ajax('/v1/student/branch',
+            {
+                data:{
+                    branch:data
+                },
+                method:'post'
+            }
+        ).done(function(newdata){
+            var dataobj = $.parseJSON(newdata);
+            if(dataobj.state === 'ok'){
+                Materialize.toast('修改成功',4000);
+                userState.branch=data;
+                ins.setState({
+                    student:userState
+                })
+            }
+        }).fail(function(err){
+            Materialize.toast(err,4000);
+        });
+    },
     render:function(){
-
         var high_margin_top = {
             marginTop:'140px'
         };
@@ -59,13 +81,13 @@ var StudentPage = React.createClass({
                 <div className="row">
                     <h2 className="center">加分项目</h2>
                     <hr/>
-                    <StudentPlusScoreItemTable items={this.state.items}/>
+                    <StudentPlusScoreItemTable items={this.state.items}  handleRefreshItems={this._handleRefreshItems}/>
                 </div>
                 <div className="row">
                     <div className="row" style={choice_sytle}>
                         <h2 className="center">专业分支选择</h2>
                         <hr/>
-                        <StudentBrcnchChoice />
+                        <StudentBrcnchChoice handleUserSubmitBranch={this.handleUserSubmitBranch}/>
                     </div>
                 </div>
             </div>
@@ -108,14 +130,13 @@ var StudentAddItemForm = React.createClass({
         ).done(function(data){
             var dataobj = $.parseJSON(data);
             if(dataobj.state==='ok'){
-                Materialize.toast("创建成功，等待审核",4000)
+                Materialize.toast("创建成功，等待审核",4000);
                 reactIns.props.handleRefreshItems();
             }else{
                 Materialize.toast(dataobj.reason,4000)
             }
         });
     },
-
     render:function(){
         return (
             <div className="col s12 l6 m6">
@@ -134,10 +155,11 @@ var StudentAddItemForm = React.createClass({
 });
 var StudentPlusScoreItemTable = React.createClass({
     render:function(){
+        var ins = this;
         var items = this.props.items;
         var rows = [];
         items.forEach(function(item){
-            rows.push(<StudentPlusScoreItemTableRow item={item} key={item._id}/>);
+            rows.push(<StudentPlusScoreItemTableRow item={item} key={item._id} handleRefreshItems={ins.props.handleRefreshItems}/>);
         });
         return(
             <table className="hoverable highlight centered">
@@ -157,13 +179,36 @@ var StudentPlusScoreItemTable = React.createClass({
 });
 
 var StudentPlusScoreItemTableRow = React.createClass({
+    _handlerDeleteClick:function(ev){
+        var item_id = ev.target.dataset.itemid;
+        var ins = this;
+        //删除这个项目
+        $.ajax(
+            '/v1/student/item',{
+                method:'DELETE',
+                data:{
+                    item_id:item_id
+                }
+            }
+        ).done(function(data){
+            var dataobj = $.parseJSON(data);
+            if(dataobj.state==='ok'){
+                Materialize.toast("删除成功!",4000);
+                ins.props.handleRefreshItems();
+            }else{
+                Materialize.toast(dataobj.reason,4000);
+            }
+        }).fail(function(err){
+            Materialize.toast(err.reason,4000);
+        });
+    },
     render:function(){
         return(
             <tr>
                 <td>{this.props.item.detail}</td>
                 <td>{this.props.item.state}</td>
                 <td>{this.props.item.score}</td>
-                <td>xx</td>
+                <td><button data-itemid={this.props.item._id} className="waves-effect waves-light btn red" onClick={this._handlerDeleteClick}>删除</button></td>
             </tr>
         );
     }
@@ -172,14 +217,16 @@ var StudentPlusScoreItemTableRow = React.createClass({
 var StudentBrcnchChoice = React.createClass({
     getDefaultProps: function () {
         var rs = {
-            branchs:[]
-        }
-        $.ajax('/v1/user/branch',{
-            async:false,
+            branches:[]
+        };
+        $.ajax('/v1/student/branches',{
+            async:false
         }).done(function(data){
             var dataobj = $.parseJSON(data);
             if(dataobj.state === 'ok'){
-                rs.branchs = dataobj.result;
+                rs.branches = dataobj.result;
+            }else{
+                Materialize.toast(dataobj.reason,4000);
             }
         }).fail(function(err){
             Materialize.toast(err,4000);
@@ -189,11 +236,16 @@ var StudentBrcnchChoice = React.createClass({
     },
     componentDidMount: function () {
         $('select').material_select();
-        $(ReactDom.findDOMNode(this.refs.branchSelect)).on('change',function(data){
-            console.log(data);
-        });
+    },
+    handleUserSubmitBranch:function(){
+        var data = this.refs.branchSelect.value;
+        this.props.handleUserSubmitBranch(data);
     },
     render:function(){
+        var rows = [];
+        this.props.branches.forEach(function(branch){
+            rows.push(<StudentBranchChoiceOption branch={branch} key={branch}/>);
+        });
         return(
             <div className="row">
                 <div className="col s6 l6 m6">
@@ -202,13 +254,14 @@ var StudentBrcnchChoice = React.createClass({
 
                 <div className="input-field col s4">
                     <select ref="branchSelect">
-                        <StudentBranchChoiceOption />
+                        <option value="" disabled="disabled">选择专业分流方向</option>
+                        {rows}
                     </select>
                     <label>专业分支选择</label>
 
                 </div>
                 <div className="input-field col s2">
-                    <a className="waves-effect waves-light btn"><i className="material-icons left">cloud</i>submit</a>
+                    <button onClick={this.handleUserSubmitBranch} className="waves-effect waves-light btn"><i className="material-icons left">cloud</i>submit</button>
                 </div>
             </div>
         );
@@ -218,7 +271,7 @@ var StudentBrcnchChoice = React.createClass({
 var StudentBranchChoiceOption = React.createClass({
     render:function(){
         return(
-            <option value="asd">选择你的分类</option>
+            <option value={this.props.branch}>{this.props.branch}</option>
         );
     }
 });

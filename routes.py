@@ -1,7 +1,8 @@
 from handlers.auth import UserLoginHandler, UserLogOutHandler
 from handlers.template_loader import AdminPageHandler, LoginPageHandler, IndexHandler, StudentPageHandler
 from handlers.user import UserInfoHandler
-from handlers.v1.student import StudentInfoHandler, StudentItemHandler, StudentItemsHandler
+from handlers.v1.student import StudentInfoHandler, StudentItemHandler, StudentItemsHandler, BranchesHandler, \
+    StudentBranchHandler
 
 handlers = (
     (r'/',IndexHandler),
@@ -16,5 +17,7 @@ handlers = (
     (r'/v1/student/info',StudentInfoHandler),
     (r'/v1/student/item',StudentItemHandler),
     (r'/v1/student/items',StudentItemsHandler),
+    (r'/v1/student/branches',BranchesHandler),
+    (r'/v1/student/branch',StudentBranchHandler),
 
 )

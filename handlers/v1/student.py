@@ -1,8 +1,7 @@
 from bson import ObjectId
 from tornado.escape import json_encode, json_decode
-from tornado.gen import coroutine
-from tornado.web import authenticated
-
+from tornado.gen import coroutine, Return
+from tornado.web import authenticated, MissingArgumentError
 from handlers.base import BaseHandler
 
 
@@ -15,29 +14,68 @@ class StudentItemHandler(BaseHandler):
         user_id = self.get_current_user()
 
         item = {
-            'user_id':ObjectId(user_id),
-            'detail':detail,
-            'score':0,
-            'state':'not passed'
+            'user_id': ObjectId(user_id),
+            'detail': detail,
+            'score': 0,
+            'state': '未审核'
         }
 
         _id = yield self.db.item.insert(item)
         self.finish(
             json_encode(
                 {
-                    'state':'ok',
-                    'result':str(_id)
+                    'state': 'ok',
+                    'result': str(_id)
                 }
             )
         )
 
     @authenticated
-    def put(self,item_id):
-        "修改加分项目"
-
-    @authenticated
+    @coroutine
     def delete(self):
-        "删除加分项目"
+        try:
+            item_id = self.get_argument('item_id')
+            item = yield self.db.item.find_one({'_id':ObjectId(item_id)})
+            if not item:
+                self.finish(
+                    json_encode(
+                        {
+                            'state':'error',
+                            'reason': 'id不存在'
+                        }
+                    )
+                )
+                raise Return()
+
+            if item['state'] == '未审核':
+                yield self.db.item.remove(item)
+                self.finish(
+                    json_encode(
+                        {
+                            'state':'ok'
+                        }
+                    )
+                )
+                raise Return()
+
+            else:
+                self.finish(
+                    json_encode(
+                        {
+                            'state':'error',
+                            'reason':'该项目已经被审核，无法删除'
+                        }
+                    )
+                )
+        except MissingArgumentError as e:
+            self.finish(
+                json_encode(
+                    {
+                        'state': 'error',
+                        'reason': '缺少参数'
+                    }
+                )
+            )
 
 
 class StudentInfoHandler(BaseHandler):
@@ -46,17 +84,18 @@ class StudentInfoHandler(BaseHandler):
     def get(self):
         "获取当前用户信息"
         user_id = self.get_current_user()
-        user = yield self.db.user.find_one({"_id":ObjectId(user_id)})
+        user = yield self.db.user.find_one({"_id": ObjectId(user_id)})
+        print(user,)
         if user:
             self.finish(json_encode(
                 dict(
                     state='ok',
                     result={
-                        '_id':str(user['_id']),
-                        'username':user['username'],
-                        'faculty':getattr(user,'faculty',''),
-                        'branch':getattr(user,'branch',''),
-                        'rank':'11/70'
+                        '_id': str(user['_id']),
+                        'username': user['username'],
+                        'faculty': user['faculty'] if 'faculty' in user else '',
+                        'branch': user['branch'] if 'branch' in user else '',
+                        'rank': '11/70'
                     }
                 )
             ))
@@ -64,27 +103,71 @@ class StudentInfoHandler(BaseHandler):
             self.finish(
                 json_encode(
                     {
-                        'state':'error',
-                        'reason':'登陆失效'
+                        'state': 'error',
+                        'reason': '登陆失效'
                     }
                 )
             )
 
+
 class StudentBranchHandler(BaseHandler):
     @authenticated
+    @coroutine
     def post(self):
         "用户提交新的分支信息ｓ"
         branch_name = self.get_argument('branch')
+        user_id = self.current_user
+        if not user_id:
+            self.clear_all_cookies()
+            self.finish(json_encode({
+                'state':'error',
+                'reason':'登陆失效'
+            }))
+            raise Return()
 
+        user = yield self.db.user.find_one({"_id":ObjectId(user_id)})
+        faculty = yield self.db.faculty.find_one({"faculty":user['faculty']})
+        if not branch_name in faculty['branch']:
+            self.finish(json_encode({
+                'state':'error',
+                'reason':"传送参数错误"
+            }))
 
-class BranchsHandler(BaseHandler):
+        user['branch'] = branch_name
+        yield self.db.user.save(user)
+
+        self.finish(json_encode({
+            'state':'ok',
+        }))
+
+class BranchesHandler(BaseHandler):
     @authenticated
     @coroutine
     def get(self):
         "获得当前用户专业下的分支"
         user_id = self.current_user
 
-        user = yield self.db.user.find_one({"_id":ObjectId(user_id)})
+        user = yield self.db.user.find_one({"_id": ObjectId(user_id)})
+        if not user:
+            self.finish(
+                json_encode(
+                    {
+                        'state':'ok',
+                        'error':'登陆失效，请重新登陆'
+                    }
+                )
+            )
+            self.clear_all_cookies()
+            self.redirect('/login')
+
+        faculty = user['faculty']
+        branch = yield self.db.faculty.find_one({'faculty':faculty})
+        self.finish(json_encode(
+            {
+                'state':'ok',
+                'result':branch['branch']
+            }
+        ))
 
 
 
@@ -95,7 +178,7 @@ class StudentItemsHandler(BaseHandler):
         "获取用户的加分项目"
         user_id = self.get_current_user()
 
-        cursor = self.db.item.find({'user_id':ObjectId(user_id)})
+        cursor = self.db.item.find({'user_id': ObjectId(user_id)})
         rs = []
         while (yield cursor.fetch_next):
             item = cursor.next_object()
@@ -104,8 +187,8 @@ class StudentItemsHandler(BaseHandler):
             rs.append(item)
         self.finish(json_encode(
             {
-                'state':'ok',
-                'result':rs
+                'state': 'ok',
+                'result': rs
             }
         ))
 
