@@ -14,8 +14,8 @@ var LoginPage = React.createClass({
             function(data){
                 var data = $.parseJSON(data);
                 if(data.state==='ok'){
-                    var user = data.resule;
-                    window.location.href='/student';
+                    var user = data.result;
+                    window.location.href='/' + user.type;
                 }else{
                     Materialize.toast(data.reason, 4000)
                 }

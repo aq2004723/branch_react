@@ -25,7 +25,6 @@ class UserLoginHandler(BaseHandler):
                     }
                 ))
                 raise Return()
-
             user = {
                 '_id':str(user_doc['_id']),
                 'username':user_doc['username'],

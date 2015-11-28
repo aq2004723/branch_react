@@ -11,7 +11,7 @@ module.exports = {
     entry: {
         login:path.join(srcPath,'js/login.jsx'),
         admin:path.join(srcPath,'js/admin.jsx'),
-        //instructor:path.join(srcPath,'js/instructor.jsx'),
+        instructor:path.join(srcPath,'js/instructor.jsx'),
         student:path.join(srcPath,'js/student.jsx')
     },
     resolve: {
