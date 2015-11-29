@@ -36,4 +36,7 @@ def add_admin():
 
 
 if __name__ == '__main__':
+    add_test_data()
+    add_student_user_info()
+    add_faculty()
     add_admin()
