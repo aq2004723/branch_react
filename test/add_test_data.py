@@ -1,6 +1,5 @@
-import pymongo
-
-client = pymongo.Connection()
+from pymongo import Connection
+client = Connection()
 db = client['test2']
 
 
