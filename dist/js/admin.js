@@ -41,6 +41,77 @@ webpackJsonpExample__name_([0],{
 	    componentDidMount: function componentDidMount() {
 	        $('select').material_select();
 	    },
+	    getFaculties: function getFaculties() {
+	        var faculties = [];
+	        $.ajax('/v1/admin/faculties', {
+	            async: false
+	        }).done(function (data) {
+	            var dataobj = $.parseJSON(data);
+	            if (dataobj.state === 'ok') {
+	                faculties = dataobj.resule;
+	            }
+	        }).fail(function (err) {
+	            console.log(err);
+	        });
+
+	        return faculties;
+	    },
+	    getBranches: function getBranches(selection) {
+	        var branches = [];
+	        $.ajax('/v1/admin/branches', {
+	            async: false,
+	            data: {
+	                faculty: selection
+	            }
+	        }).done(function (data) {
+	            var dataobj = $.parseJSON(data);
+	            if (dataobj.state === 'ok') {
+	                branches = dataobj.resule;
+	            }
+	        }).fail(function (err) {
+	            console.log(err);
+	        });
+
+	        return branches;
+	    },
+	    getStudents: function getStudents(faculty) {
+	        var students = [];
+	        $.ajax('/v1/admin/students', {
+	            async: false,
+	            data: {
+	                faculty: faculty
+	            }
+	        }).done(function (data) {
+	            var dataobj = $.parseJSON(data);
+	            if (dataobj.state === 'ok') {
+	                students = dataobj.result;
+	            }
+	        }).fail(function (err) {
+	            console.log(err);
+	        });
+
+	        return students;
+	    },
+	    getInitialState: function getInitialState() {
+	        var faculties = this.getFaculties();
+	        var selection = faculties[0];
+	        var branches = this.getBranches(selection);
+	        var students = this.getStudents(faculties);
+	        return {
+	            faculties: faculties,
+	            students: students,
+	            selection: selection,
+	            branches: branches
+	        };
+	    },
+	    handleSelectChange: function handleSelectChange(selection) {
+	        var students = this.getStudents(selection);
+	        this.setState({
+	            students: students,
+	            selection: selection,
+	            branches: this.getBranches(selection)
+	        });
+	    },
 	    render: function render() {
 	        var margin_top = {
 	            marginTop: "140px"
@@ -63,13 +134,20 @@ webpackJsonpExample__name_([0],{
 	                _react2.default.createElement(
 	                    'div',
 	                    { className: 'row' },
-	                    _react2.default.createElement(AdminBranchSelection, null)
+	                    _react2.default.createElement(AdminBranchSelection, {
+	                        faculties: this.state.faculties,
+	                        handleSelectChange: this.handleSelectChange,
+	                        selection: this.state.selection
+	                    })
 	                ),
 	                _react2.default.createElement('hr', null),
 	                _react2.default.createElement(
 	                    'div',
 	                    { className: 'row' },
-	                    _react2.default.createElement(AdminStudentInfoTbale, null)
+	                    _react2.default.createElement(AdminStudentInfoTbale, {
+	                        students: this.state.students,
+	                        branches: this.state.branches
+	                    })
 	                )
 	            )
 	        );
@@ -79,71 +157,49 @@ webpackJsonpExample__name_([0],{
 	var AdminBranchSelection = _react2.default.createClass({
 	    displayName: 'AdminBranchSelection',
 
-	    getBranches: function getBranches() {
-	        var branches = [];
-	        $.ajax('/v1/admin/branches', {
-	            async: false
-	        }).done(function (data) {
-	            var dataobj = $.parseJSON(data);
-	            if (dataobj.state === 'ok') {
-	                branches = dataobj.resule;
-	            }
-	        }).fail(function (err) {
-	            console.log(err);
-	        });
-
-	        return branches;
-	    },
-	    getStudents: function getStudents() {
-	        $.ajax('/v1/admin/students', {
-	            async: false
-	        }).done(function (data) {
-	            var dataobj = $.parseJSON(data);
-	            if (dataobj.state === 'ok') {
-	                rs.branches = dataobj.resule;
-	            }
-	        }).fail(function (err) {
-	            console.log(err);
-	        });
-	    },
-	    getInitialState: function getInitialState() {
-	        return {
-	            branches: this.getBranches(),
-	            students: []
-	        };
-	    },
-	    handleSelectChange: function handleSelectChange() {
-	        console.log(this.refs.branch_select_multiple.value);
+	    handleSelectChange: function handleSelectChange(selection) {
+	        this.props.handleSelectChange(selection);
 	    },
 	    componentDidMount: function componentDidMount() {
 	        var _this = this;
 
 	        $(ReactDom.findDOMNode(this.refs.branch_select)).on('change', function () {
-	            var value = _this.refs.branch_select.value;
+	            var selection = _this.refs.branch_select.value;
+	            _this.handleSelectChange(selection);
 	        });
 	    },
 	    render: function render() {
 	        var rows = [];
-	        this.state.branches.forEach(function (branch) {
-	            rows.push(_react2.default.createElement(AdminBranchSelectionOption, { branch: branch }));
+	        this.props.faculties.forEach(function (faculty) {
+	            rows.push(_react2.default.createElement(AdminBranchSelectionOption, { faculty: faculty, key: faculty }));
 	        });
 	        return _react2.default.createElement(
 	            'div',
-	            { className: 'input-field col s4' },
+	            null,
 	            _react2.default.createElement(
-	                'select',
-	                { ref: 'branch_select' },
+	                'div',
+	                { className: 'input-field col s4' },
 	                _react2.default.createElement(
-	                    'option',
-	                    { disabled: 'disabled' },
-	                    '按专业选择课程'
+	                    'select',
+	                    { ref: 'branch_select' },
+	                    _react2.default.createElement(
+	                        'option',
+	                        { disabled: 'disabled' },
+	                        '按专业选择课程'
+	                    ),
+	                    rows
 	                ),
-	                rows
+	                _react2.default.createElement(
+	                    'label',
+	                    null,
+	                    '专业分支选择'
+	                )
 	            ),
 	            _react2.default.createElement(
-	                'label',
+	                'p',
 	                null,
-	                '专业分支选择'
+	                '当前选择',
+	                this.props.selection
 	            )
 	        );
 	    }
@@ -155,8 +211,8 @@ webpackJsonpExample__name_([0],{
 	    render: function render() {
 	        return _react2.default.createElement(
 	            'option',
-	            { value: this.props.branch },
-	            this.props.branch
+	            { value: this.props.faculty },
+	            this.props.faculty
 	        );
 	    }
 	});
@@ -165,6 +221,15 @@ webpackJsonpExample__name_([0],{
 	    displayName: 'AdminStudentInfoTbale',
 
 	    render: function render() {
+	        var rows = [];
+	        var ins = this;
+	        this.props.students.forEach(function (student) {
+	            rows.push(_react2.default.createElement(AdminStudentInfoTbaleRow, {
+	                student: student,
+	                key: student,
+	                branches: ins.props.branches
+	            }));
+	        });
 	        return _react2.default.createElement(
 	            'table',
 	            { className: 'hoverable highlight centered' },
@@ -174,11 +239,6 @@ webpackJsonpExample__name_([0],{
 	                _react2.default.createElement(
 	                    'tr',
 	                    null,
-	                    _react2.default.createElement(
-	                        'th',
-	                        null,
-	                        '学号'
-	                    ),
 	                    _react2.default.createElement(
 	                        'th',
 	                        null,
@@ -192,12 +252,12 @@ webpackJsonpExample__name_([0],{
 	                    _react2.default.createElement(
 	                        'th',
 	                        null,
-	                        '成绩排名'
+	                        '成绩'
 	                    ),
 	                    _react2.default.createElement(
 	                        'th',
 	                        null,
-	                        '绩点排名'
+	                        '绩点'
 	                    ),
 	                    _react2.default.createElement(
 	                        'th',
@@ -209,7 +269,7 @@ webpackJsonpExample__name_([0],{
 	            _react2.default.createElement(
 	                'tbody',
 	                null,
-	                _react2.default.createElement(AdminStudentInfoTbaleRow, null)
+	                rows
 	            )
 	        );
 	    }
@@ -219,71 +279,46 @@ webpackJsonpExample__name_([0],{
 	    displayName: 'AdminStudentInfoTbaleRow',
 
 	    render: function render() {
+	        var student = this.props.student;
+	        var rows = [];
+	        //this.props.branches.forEach((branch)=>{
+	        //    rows.push(<AdminStudentInfoTbaleRowOption branch={branch} key={branch} />);
+	        //});
 	        return _react2.default.createElement(
 	            'tr',
 	            null,
 	            _react2.default.createElement(
 	                'td',
 	                null,
-	                '2131206'
+	                student.name
 	            ),
 	            _react2.default.createElement(
 	                'td',
 	                null,
-	                '王大锤'
+	                student.branch ? student.branch : "尚未选择"
 	            ),
 	            _react2.default.createElement(
 	                'td',
 	                null,
-	                '高富帅'
+	                student.score
 	            ),
 	            _react2.default.createElement(
 	                'td',
 	                null,
-	                '70/140'
-	            ),
-	            _react2.default.createElement(
-	                'td',
-	                null,
-	                '60/140'
-	            ),
-	            _react2.default.createElement(
-	                'td',
-	                null,
-	                _react2.default.createElement(
-	                    'div',
-	                    { className: 'input-field' },
-	                    _react2.default.createElement(
-	                        'select',
-	                        null,
-	                        _react2.default.createElement(
-	                            'option',
-	                            { value: 'selected', disabled: true },
-	                            '选择分流'
-	                        ),
-	                        _react2.default.createElement(
-	                            'option',
-	                            { value: '1' },
-	                            'Option 1'
-	                        ),
-	                        _react2.default.createElement(
-	                            'option',
-	                            { value: '2' },
-	                            'Option 2'
-	                        ),
-	                        _react2.default.createElement(
-	                            'option',
-	                            { value: '3' },
-	                            'Option 3'
-	                        )
-	                    ),
-	                    _react2.default.createElement(
-	                        'label',
-	                        null,
-	                        '专业分支选择'
-	                    )
-	                )
+	                student.point
 	            )
+	        );
+	    }
+	});
+
+	var AdminStudentInfoTbaleRowOption = _react2.default.createClass({
+	    displayName: 'AdminStudentInfoTbaleRowOption',
+
+	    render: function render() {
+	        return _react2.default.createElement(
+	            'option',
+	            { value: this.props.branch },
+	            this.props.branch
 	        );
 	    }
 	});

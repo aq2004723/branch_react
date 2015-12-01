@@ -3,10 +3,6 @@ client = pymongo.Connection()
 db = client['test2']
 
 
-def add_test_data():
-    user = db.user.find_one({"username": "coco"})
-    print(user)
-
 
 def add_student_user_info():
     coco = {
@@ -35,7 +31,6 @@ def add_admin():
 
 
 if __name__ == '__main__':
-    add_test_data()
     add_student_user_info()
     add_faculty()
     add_admin()

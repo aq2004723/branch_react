@@ -2,7 +2,7 @@ from handlers.auth import UserLoginHandler, UserLogOutHandler
 from handlers.template_loader import AdminPageHandler, LoginPageHandler, IndexHandler, StudentPageHandler, \
     InstructorPageHandler
 from handlers.user import UserInfoHandler
-from handlers.v1.admin import AdminBranchHandler
+from handlers.v1.admin import AdminFacultyHandler, AdminBranchesHandler, AdminStudentHandler
 from handlers.v1.instructor import InstructorStudentsHandler, InstructorItemsHandler, InstructorItemHandler
 from handlers.v1.student import StudentInfoHandler, StudentItemHandler, StudentItemsHandler, BranchesHandler, \
     StudentBranchHandler
@@ -28,6 +28,8 @@ handlers = (
     (r'/v1/instructor/items', InstructorItemsHandler),
     (r'/v1/instructor/item', InstructorItemHandler),
 
-    (r'/v1/admin/branches', AdminBranchHandler),
+    (r'/v1/admin/faculties', AdminFacultyHandler),
+    (r'/v1/admin/branches', AdminBranchesHandler),
+    (r'/v1/admin/students', AdminStudentHandler),
 
 )

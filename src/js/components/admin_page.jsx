@@ -6,12 +6,33 @@ var AdminPage = React.createClass({
     componentDidMount: function () {
         $('select').material_select();
     },
-    getBranches:function(){
-        var branches =[];
+    getFaculties:function(){
+        var faculties =[];
+        $.ajax(
+            '/v1/admin/faculties',
+            {
+                async:false
+            }
+        ).done((data)=>{
+            var dataobj = $.parseJSON(data);
+            if(dataobj.state==='ok'){
+                faculties=dataobj.resule;
+            }
+        }).fail((err)=>{
+            console.log(err);
+        });
+
+        return faculties;
+    },
+    getBranches:function(selection){
+        var branches = [];
         $.ajax(
             '/v1/admin/branches',
             {
-                async:false
+                async:false,
+                data:{
+                    faculty:selection
+                }
             }
         ).done((data)=>{
             var dataobj = $.parseJSON(data);
@@ -37,7 +58,7 @@ var AdminPage = React.createClass({
         ).done((data)=>{
             var dataobj = $.parseJSON(data);
             if(dataobj.state==='ok'){
-                students=dataobj.resule;
+                students=dataobj.result;
             }
         }).fail((err)=>{
             console.log(err);
@@ -45,16 +66,25 @@ var AdminPage = React.createClass({
 
         return students;
     },
-    getDefaultProps:function(){
+    getInitialState:function(){
+        var faculties = this.getFaculties();
+        var selection = faculties[0];
+        var branches = this.getBranches(selection);
+        var students = this.getStudents(faculties);
         return {
-            branches:this.getBranches()
+            faculties:faculties,
+            students:students,
+            selection:selection,
+            branches:branches
         };
     },
-    getInitialState:function(){
-        var branch = this.props.branches[0];
-        return {
-            students:this.getStudents(branch)
-        };
+    handleSelectChange:function(selection){
+        var students = this.getStudents(selection);
+        this.setState({
+            students:students,
+            selection:selection,
+            branches:this.getBranches(selection)
+        });
     },
     render:function(){
         var margin_top = {
@@ -69,11 +99,18 @@ var AdminPage = React.createClass({
                 <div className="row" style={rowstyle}>
                     <h2 className="center">学生信息</h2>
                     <div className="row">
-                        <AdminBranchSelection branches={this.props.branches} />
+                        <AdminBranchSelection
+                            faculties={this.state.faculties}
+                            handleSelectChange={this.handleSelectChange}
+                            selection = {this.state.selection}
+                        />
                     </div>
                     <hr/>
                     <div className="row">
-                        <AdminStudentInfoTbale students={this.state} />
+                        <AdminStudentInfoTbale
+                            students={this.state.students}
+                            branches={this.state.branches}
+                        />
                     </div>
                 </div>
             </div>
@@ -82,33 +119,30 @@ var AdminPage = React.createClass({
 });
 
 var AdminBranchSelection = React.createClass({
-
-    getInitialState:function(){
-        return {
-            branches:this.getBranches(),
-            students:[]
-        };
-    },
-    handleSelectChange:function(){
-        console.log(this.refs.branch_select_multiple.value);
+    handleSelectChange:function(selection){
+        this.props.handleSelectChange(selection);
     },
     componentDidMount:function(){
         $(ReactDom.findDOMNode(this.refs.branch_select)).on('change', () => {
-            var value = this.refs.branch_select.value;
+            var selection = this.refs.branch_select.value;
+            this.handleSelectChange(selection);
         });
     },
     render:function(){
         var rows = [];
-        this.state.branches.forEach((branch)=>{
-            rows.push(<AdminBranchSelectionOption branch={branch}/>);
+        this.props.faculties.forEach((faculty)=>{
+            rows.push(<AdminBranchSelectionOption faculty={faculty} key={faculty}/>);
         });
         return(
-            <div className="input-field col s4">
-                <select ref="branch_select">
-                    <option disabled="disabled">按专业选择课程</option>
-                    {rows}
-                </select>
-                <label>专业分支选择</label>
+            <div>
+                <div className="input-field col s4">
+                    <select ref="branch_select" >
+                        <option disabled="disabled">按专业选择课程</option>
+                        {rows}
+                    </select>
+                    <label>专业分支选择</label>
+                </div>
+                <p>当前选择{this.props.selection}</p>
             </div>
         );
     }
@@ -117,26 +151,34 @@ var AdminBranchSelection = React.createClass({
 var AdminBranchSelectionOption = React.createClass({
     render:function(){
         return(
-            <option value={this.props.branch}>{this.props.branch}</option>
+            <option value={this.props.faculty}>{this.props.faculty}</option>
         );
     }
 });
 
 var AdminStudentInfoTbale = React.createClass({
     render:function(){
+        var rows = [];
+        var ins = this;
+        this.props.students.forEach((student)=>{
+           rows.push(<AdminStudentInfoTbaleRow
+               student={student}
+               key={student}
+               branches={ins.props.branches}
+           />)
+        });
         return(
             <table className="hoverable highlight centered">
                 <thead>
                 <tr>
-                    <th>学号</th>
                     <th>姓名</th>
                     <th>学生志愿</th>
-                    <th>成绩排名</th>
-                    <th>绩点排名</th>
+                    <th>成绩</th>
+                    <th>绩点</th>
                     <th>选择分流</th>
                 </tr>
                 </thead>
-                <tbody><AdminStudentInfoTbaleRow /></tbody>
+                <tbody>{rows}</tbody>
             </table>
         );
     }
@@ -144,25 +186,26 @@ var AdminStudentInfoTbale = React.createClass({
 
 var AdminStudentInfoTbaleRow = React.createClass({
     render:function(){
+        var student = this.props.student;
+        var rows = [];
+        //this.props.branches.forEach((branch)=>{
+        //    rows.push(<AdminStudentInfoTbaleRowOption branch={branch} key={branch} />);
+        //});
         return(
             <tr>
-                <td>2131206</td>
-                <td>王大锤</td>
-                <td>高富帅</td>
-                <td>70/140</td>
-                <td>60/140</td>
-                <td>
-                    <div className="input-field">
-                        <select>
-                            <option value="selected" disabled>选择分流</option>
-                            <option value="1">Option 1</option>
-                            <option value="2">Option 2</option>
-                            <option value="3">Option 3</option>
-                        </select>
-                        <label>专业分支选择</label>
-                    </div>
-                </td>
+                <td>{student.name}</td>
+                <td>{student.branch?student.branch:"尚未选择"}</td>
+                <td>{student.score}</td>
+                <td>{student.point}</td>
             </tr>
+        );
+    }
+});
+
+var AdminStudentInfoTbaleRowOption = React.createClass({
+    render:function(){
+        return(
+            <option value={this.props.branch}>{this.props.branch}</option>
         );
     }
 });
